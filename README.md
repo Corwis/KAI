@@ -1,129 +1,333 @@
-# KaiGraph / VVV: Minimal Relational World Models
+# KaiGraph
 
-**Emergent Dynamics, Rollout Consistency, and Intrinsic Curiosity via Prediction Drift**
+**A Minimal Relational World Model for Multi-Object Dynamics, Rollout Verification, and Curiosity-Driven Learning**
 
-A minimal relational world model exploring whether physical-like dynamics can emerge from relational interactions rather than explicit rules.
+KaiGraph is an experimental graph-based world model that explores whether physical-like behavior can emerge from relational interactions between objects.
 
-## Initial Results
+Instead of predicting tokens, KaiGraph predicts evolving relational world states.
 
-- ✅ **Emergent physics** without hardcoded equations (falling, buoyancy, stability)
-- ✅ **Generalization to unseen objects** via relational embeddings
-- ✅ **Multi-step rollout stability** with dynamic attractors
-- ✅ **Intrinsic curiosity** emerging from prediction drift
-- ✅ **Self-directed learning** via curiosity-driven retraining
+The system combines:
 
----
-
-## Quick Start
-
-```bash
-git clone https://github.com/corwis/kaigraph.git
-cd kaigraph
-
-pip install -r requirements.txt
-
-python train.py              # Train the model
-python generate_figures.py   # Generate publication figures
-python explorer.py           # Run active learning loop
-```
+* graph neural message passing
+* multi-object dynamics prediction
+* rollout verification
+* intrinsic curiosity
+* self-directed exploration
 
 ---
 
-## Core Concept
+# Core Idea
 
-Instead of predicting tokens, KaiGraph predicts evolving **relational world states**.
+A scene is represented as a relational graph:
 
+```text
+Objects (nodes)
++
+Object-to-object relations (edges)
 ```
-Scene Graph (Objects + Relations)
+
+The model predicts how the entire scene evolves over time.
+
+```text
+Scene Graph
     ↓
-Relational Encoding (Node + Edge Features)
+Node + Edge Encoding
     ↓
-Message Passing (Graph Neural Network)
+Message Passing
     ↓
-Latent Dynamics Learning
+Latent Relational Dynamics
     ↓
 Multi-Step Rollouts
     ↓
-Prediction Drift Analysis
+Prediction Drift
     ↓
 Curiosity Scoring
+```
+
+---
+
+# Current Features
+
+## Multi-Object Dynamics
+
+KaiGraph supports dynamic scenes with multiple interacting objects.
+
+Examples:
+
+* falling objects
+* buoyancy
+* stacking-like behavior
+* contact transitions
+* collision-like interactions
+* rollout stability
+
+Scenes contain:
+
+* 3-5 objects
+* pairwise relations
+* dynamic interaction graphs
+
+---
+
+## Graph Neural Message Passing
+
+Every object exchanges information with every other object.
+
+```text
+object ↔ object
+```
+
+The model learns relational interactions through iterative message passing instead of hardcoded symbolic rules.
+
+---
+
+## Rollout Verification
+
+The model performs long-horizon rollouts and compares them against an oracle dynamics system.
+
+Metrics include:
+
+* position error
+* velocity error
+* contact error
+* drift growth
+* final rollout error
+* consistency score
+* curiosity score
+
+---
+
+## Intrinsic Curiosity
+
+Curiosity emerges from prediction drift.
+
+Scenarios with unstable or poorly-understood dynamics automatically receive higher curiosity scores.
+
+This allows the system to identify:
+
+* unstable interactions
+* rollout failure regions
+* weak internal world models
+
+without external rewards.
+
+---
+
+## Self-Directed Exploration
+
+`KaiExplorer` generates candidate scenes, evaluates curiosity, and retrains on high-curiosity scenarios.
+
+This creates a minimal autonomous learning loop:
+
+```text
+generate scenes
     ↓
-Self-Directed Retraining
+predict rollouts
+    ↓
+compare with oracle
+    ↓
+measure drift
+    ↓
+select surprising worlds
+    ↓
+retrain
 ```
 
 ---
 
-## Key Experimental Results
+# Repository Structure
 
-### 1. Emergent Relational Dynamics
-
-Without explicit physics rules, the system learns:
-- **Falling behavior** on unstable supports (negative velocity)
-- **Rising behavior** for buoyant objects (positive velocity)  
-- **Stable equilibrium** on flat surfaces (near-zero velocity)
-
-### 2. Generalization to Unseen Objects
-
-Object `ice` was **never shown during training**.
-
+```text
+KAI/
+│
+├── data.py
+├── model.py
+├── train.py
+├── explorer.py
+├── export_results.py
+├── generate_figures.py
+│
+├── README.md
+├── ResearchNote.md
+├── requirements.txt
+│
+├── results/
+│   ├── training_history.csv
+│   ├── verification_history.csv
+│   ├── rollout_sample.csv
+│   ├── rollouts.csv
+│   └── verification_summary.csv
+│
+└── figures/
+    ├── figure_training_loss.png
+    ├── figure_curiosity.png
+    ├── figure_consistency.png
+    ├── figure_rollout_positions.png
+    ├── figure_rollout_velocity.png
+    └── figure_curiosity_vs_drift.png
 ```
-apple on sphere → vy ≈ -0.1655
-ice on sphere   → vy ≈ -0.1737
-Difference: 4.7%
-```
-
-The model generalizes through **relational structure**, not object identity.
-
-### 3. Multi-Step Rollout Stability
-
-Rollouts converge to dynamic attractors, not chaos:
-
-```
-apple on sphere:
-step 0:  y=0.89
-step 1:  y=0.71
-step 2:  y=0.54
-step 3:  y=0.42
-step 4+: y≈0.42 (STABLE ATTRACTOR)
-```
-
-### 4. Intrinsic Curiosity via Prediction Drift
-
-Prediction drift automatically identifies what the model doesn't understand:
-
-| Scenario | Consistency | Curiosity | Interpretation |
-|----------|-------------|-----------|-----------------|
-| apple on table | 0.91 | 0.10 | Well-understood (boring) |
-| apple on sphere | 0.006 | 172+ | Poorly-understood (interesting) |
-| ice on sphere | 0.006 | 173 | High-priority learning target |
-
-No external reward signal needed.
-
-### 5. Self-Directed Learning (KaiExplorer v0.7)
-
-The model generates scenario variations, evaluates curiosity, and retrains on high-curiosity states:
-
-```
-Before retraining: ball on sphere → curiosity 174.79
-After retraining:  ball on sphere → curiosity 171.69 ↓
-```
-
-Measurable self-improvement without external guidance.
 
 ---
 
-## Architecture
+# Installation
 
-### Input Features
+```bash
+git clone https://github.com/Corwis/KAI.git
+cd KAI
 
-**Node (Object) Features:**
-```
-mass, roundness, flatness, rigidity, buoyancy, movable, y, vy, contact
-```
-
-**Edge (Relation) Features:**
-```
-relation_type, contact_area, support_strength
+pip install -r requirements.txt
 ```
 
-### Model Component
+---
+
+# Training
+
+Train the relational dynamics model:
+
+```bash
+python train.py
+```
+
+Outputs:
+
+* trained model checkpoint
+* rollout metrics
+* verification metrics
+* rollout samples
+
+saved into:
+
+```text
+results/
+```
+
+---
+
+# Export Results
+
+Generate rollout exports and verification summaries:
+
+```bash
+python export_results.py
+```
+
+---
+
+# Generate Figures
+
+Generate research figures from CSV results:
+
+```bash
+python generate_figures.py
+```
+
+Generated figures are saved into:
+
+```text
+figures/
+```
+
+---
+
+# Example Concepts Learned
+
+The current prototype can learn simplified forms of:
+
+* gravity-like behavior
+* buoyancy
+* contact transitions
+* object interactions
+* rollout stabilization
+* relational generalization
+
+without explicit symbolic physics equations.
+
+---
+
+# Research Direction
+
+KaiGraph explores the idea that future AI systems may require:
+
+```text
+Language Models
++
+World Models
++
+Verification
++
+Planning
++
+Persistent State
+```
+
+instead of pure token prediction systems.
+
+The project focuses on:
+
+* relational reasoning
+* predictive simulation
+* rollout consistency
+* emergent dynamics
+* curiosity-driven learning
+
+---
+
+# Limitations
+
+This is an early research prototype.
+
+Current limitations:
+
+* simplified synthetic physics
+* no real collision solver
+* no rotational dynamics
+* no transformer memory
+* small-scale environments
+* synthetic oracle dynamics
+* limited rollout stability
+
+The goal is not realistic physics simulation.
+
+The goal is studying:
+
+* relational dynamics learning
+* world modeling
+* prediction drift
+* intrinsic curiosity
+
+in minimal systems.
+
+---
+
+# Future Work
+
+Planned directions:
+
+* larger multi-object scenes
+* learned embeddings
+* temporal memory
+* attention-based interactions
+* transformer world models
+* adaptive rollout horizons
+* differentiable planning
+* language-conditioned world states
+* multimodal integration
+* agentic reasoning systems
+
+---
+
+# Status
+
+Current status:
+
+* working research prototype
+* active experimentation
+* multi-object relational dynamics operational
+* rollout verification operational
+* curiosity-driven exploration operational
+
+---
+
+# License
+
+MIT License
